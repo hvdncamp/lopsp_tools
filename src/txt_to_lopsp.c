@@ -51,7 +51,7 @@ determine the types of all other vertices in O'. Finally for every vertex its in
 unique number) are given in the order of the embedding, followed by a 0. Every number here is an unsigned short
 (2 bytes). An example of the .lopsp-format for gyro:
 
->>lopsp<<5351011023450606215730470
+>>lopsp<<53510110234506062153040
 
 */
 #include<stdint.h>
