@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/* Converts a readable .txt-representation of a lopsp-operation to the .lopsp format. 
+/* Converts a readable .txt-representation of a lopsp-operation to the .lopsp format.
 
 Input is taken from stdin and output is given through stdout.
 
@@ -47,7 +47,7 @@ graph O' (which is a plane quadrangulation) is what we will encode. The format s
 Then follows the number of vertices in O' and three unsigned shorts containing the numbers of the vertices
 v0, v1 and v2 in that order. After that there is another unsigned short, which is 0 if v0 is of type 0 and 2
 if v0 is of type 2. Then another, which is 0 if v1 is not of type 1 and 1 if it is. The types of these vertices
-determine the types of all other vertices in O'. Finally for every vertex its incident edges (every edge has a
+determine the types of all other vertices in O'. Finally, for every vertex its incident edges (every edge has a
 unique number) are given in the order of the embedding, followed by a 0. Every number here is an unsigned short
 (2 bytes). An example of the .lopsp-format for gyro:
 
@@ -149,7 +149,7 @@ void print_edgecode(Neighbours* neighbours, uint16_t n, const uint16_t* vi, cons
                 y = neighbours[x].list[i];
                 if(copy[x].list[i]!=0){ // we have seen this edge before
                     fwrite(&(copy[x].list[i]),sizeof(uint16_t), 1, stdout);
-                } else if((type[x] != '1' && type[y] != '1') || ((vi[1] == y || x == vi[1]) && type[vi[1]] == '1' && edge_decided == 0)){ //we have not seen this edge before and it is in the subgraph
+                } else if((type[x] != '1' && type[y] != '1') || ((vi[1] == y || x == vi[1]) && type[vi[1]] == '1' && edge_decided == 0)){ //we have not seen this edge before, and it is in the subgraph
                     index = has_angle(neighbours +y, neighbours[x].list[(i+1)%neighbours[x].count], x) % neighbours[y].count;
                     count++;
                     fwrite(&count,sizeof(uint16_t), 1, stdout);
@@ -263,7 +263,6 @@ int main(int argc,char *argv[]) {
                 default:
                     fprintf(stderr, "There is a v without 0, 1 or 2 at vertex %hd\n", curr);
                     exit(1);
-                    break;
                 }
                 newcount++;
                 newnames[curr]=newcount;
@@ -284,7 +283,6 @@ int main(int argc,char *argv[]) {
             default:
                 fprintf(stderr, "No ) where it was expected at vertex %hd. Perhaps there is a ' ' right before the ), or a ',' is missing.\n", curr);
                 exit(1);
-                break;
             }
 
             if(getc(stdin)!=':'){
@@ -293,7 +291,10 @@ int main(int argc,char *argv[]) {
             }
 
             //Reading neighbours
-            fgets(neighbourbuffer, BUFFERLENGTH, stdin); //The rest of the line as a string 
+            if(fgets(neighbourbuffer, BUFFERLENGTH, stdin) == NULL){//The rest of the line as a string
+                fprintf(stderr, "The neighbours cannot be read. Are you sure your file is encoded correctly?\n");
+                exit(1);
+            }
             tok = strtok(neighbourbuffer, " \t\r");
             do{
                 if(sscanf(tok, "%hd", &temp)==1){ //A number is read, everything else is ignored

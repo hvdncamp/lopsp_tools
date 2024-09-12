@@ -238,7 +238,10 @@ int main(int argc,char *argv[]) {
 
     //Read and check header
     char buffer[14];
-    fgets(buffer, 14, stdin);
+    if(fgets(buffer, 14, stdin) == NULL){
+        fprintf(stderr, "The encoding of the operations should start with the header >>deco_code<< \n");
+        exit(1);
+    }
     if (strcmp(buffer, ">>deco_code<<") != 0) {
         fprintf(stderr, "The encoding of the operations should start with the header >>deco_code<< \n");
         exit(1);
@@ -249,7 +252,10 @@ int main(int argc,char *argv[]) {
     while(read_planarcode(stdin, lopsp, PLANAR_CODE_LITTLE_ENDIAN)) {
         //read kind and a and b
         lspcount++;
-        fread(&kind, 1, 1, stdin);
+        if(fread(&kind, 1, 1, stdin) != 1 ){
+            fprintf(stderr, "Decocode number %d could not be read. Are you sure it is encoded correctly?\n", lspcount);
+            exit(1);
+        }
         switch (kind) {
             case 0:
             case 1:
@@ -263,8 +269,14 @@ int main(int argc,char *argv[]) {
                 fprintf(stderr, "kind should be 0, 1, 2 or 3, not %d\n", kind);
                 exit(1);
         }
-        fread(&a, 1, 1, stdin);
-        fread(&b, 1, 1, stdin);
+        if(fread(&a, 1, 1, stdin) != 1 ){
+            fprintf(stderr, "Decocode number %d could not be read. Are you sure it is encoded correctly?\n", lspcount);
+            exit(1);
+        }
+        if(fread(&b, 1, 1, stdin) != 1 ){
+            fprintf(stderr, "Decocode number %d could not be read. Are you sure it is encoded correctly?\n", lspcount);
+            exit(1);
+        }
 
         //read border
         int border_vertices[lopsp->vertexcount + 2];//true if a vertex is in the border
@@ -282,7 +294,10 @@ int main(int argc,char *argv[]) {
 
         count0 = 0;
         while (count0 < 3) {
-            fread(border_type + border_length, 1, 1, stdin);
+            if(fread(border_type + border_length, 1, 1, stdin) != 1){
+                fprintf(stderr, "Decocode number %d could not be read. Are you sure it is encoded correctly?\n", lspcount);
+                exit(1);
+            }
             if (border_type[border_length] == 0) {
                 count0++;
             }

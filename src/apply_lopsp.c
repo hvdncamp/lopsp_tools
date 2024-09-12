@@ -51,6 +51,7 @@ int main(int argc,char *argv[]) {
     enum code output_format = EDGE_CODE; //default format is edge code
     int loops_allowed = 1;
     int multiple_edges_allowed = 1;
+    int calculate_simple = 0;
 
     int option;
     while ((option = getopt(argc, argv, "hpoglms")) != -1) {
@@ -89,6 +90,10 @@ int main(int argc,char *argv[]) {
                 fprintf(stderr, "unrecognized option %c\n", option);
                 exit(1);
         }
+    }
+
+    if (!loops_allowed || !multiple_edges_allowed){
+        calculate_simple = 1;
     }
 
     if(!mode){
@@ -131,16 +136,18 @@ int main(int argc,char *argv[]) {
         graph_count++;
         apply(lopsp, graph, result);
         can_be_written = 1;
-        if(has_loop(result)){
-            loops_count++;
-            if(!loops_allowed){
-                can_be_written = 0;
+        if(calculate_simple){
+            if(has_loop(result)){
+                loops_count++;
+                if(!loops_allowed){
+                    can_be_written = 0;
+                }
             }
-        }
-        if(has_multiple_edges(result)){
-            multiple_edge_count++;
-            if(!multiple_edges_allowed){
-                can_be_written = 0;
+            if(has_multiple_edges(result)){
+                multiple_edge_count++;
+                if(!multiple_edges_allowed){
+                    can_be_written = 0;
+                }
             }
         }
         if(can_be_written){
@@ -153,10 +160,14 @@ int main(int argc,char *argv[]) {
     } else {
         fprintf(stderr, "Applied %d lopsp-operation%s to one graph.\n", graph_count, graph_count == 1 ? "" : "s");
     }
-    fprintf(stderr, "Of the results:\n%d graph%s had loops\n"
-                    "%d graph%s had multiple edges\n"
-                    "%d graph%s written to stdout in %s\n", loops_count, loops_count == 1 ? "" : "s", multiple_edge_count
-                    , multiple_edge_count == 1 ? "" : "s", written_count, written_count == 1 ? " was" : "s were"
+    if(calculate_simple){
+        fprintf(stderr, "Of the results:\n%d graph%s had loops\n"
+                        "%d graph%s had multiple edges\n"
+                        , loops_count, loops_count == 1 ? "" : "s", multiple_edge_count
+                , multiple_edge_count == 1 ? "" : "s");
+    }
+    fprintf(stderr,
+                    "%d graph%s written to stdout in %s\n", written_count, written_count == 1 ? " was" : "s were"
                     , output_format == EDGE_CODE ? "edgecode" : "planarcode");
 
     free_graph(graph);

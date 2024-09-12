@@ -31,12 +31,17 @@ int read_and_writeedgecode(FILE* file, int count){
     int curr_vertex; //the number of the current vertex
     unsigned long curr_edge; // the number of the current edge
 
-    fread(&read_byte, 1, 1,file);//read the number of vertices
+    if(fread(&read_byte, 1, 1,file) != 1) {//read the number of vertices
+        return 0;
+    }
     if (feof(file)){// we have reached the end of the file, there is no graph to be read
         return 0;
     }
     if(read_byte == 0){//maybe more than one byte per number
-        fread(&read_byte, 1, 1,file);//read the number of bytes per number and length of following number
+        if(fread(&read_byte, 1, 1,file) != 1) {//read the number of bytes per number and length of following number
+            fprintf(stderr, "Something went wrong reading graph %d. Are you sure it is encoded correctly? \n", count);
+            exit(1);
+        }
         numbersize = read_byte & ((uint8_t)(~0) >> 4);
         totalsize = read_edge_number(file, read_byte >> 4);
     } else {// 1 byte per number

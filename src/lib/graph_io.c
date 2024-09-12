@@ -28,7 +28,9 @@ unsigned long read_edge_number(FILE* file, int number_of_bytes){
         exit(1);
     }
     for (int i = 1; i <= number_of_bytes; ++i) {
-        fread(&byte, 1, 1, file);
+        if(fread(&byte, 1, 1, file) != 1){
+            return 0; //end of file reached
+        }
         if(i==1 && byte == 255){
             return UINT64_MAX;
         }
@@ -48,7 +50,9 @@ unsigned long read_big_endian(FILE* file, int number_of_bytes){
         exit(1);
     }
     for (int i = 1; i <= number_of_bytes; ++i) {
-        fread(&byte, 1, 1, file);
+        if(fread(&byte, 1, 1, file) != 1){
+            return 0; //end of file reached
+        }
         to_add = byte;
         number = number | (to_add << (8 * (number_of_bytes - i)));
     }
@@ -65,7 +69,9 @@ unsigned long read_little_endian(FILE* file, int number_of_bytes){
         exit(1);
     }
     for (int i = 0; i < number_of_bytes; ++i) {
-        fread(&byte, 1, 1, file);
+        if(fread(&byte, 1, 1, file) != 1){
+            return 0; //end of file reached
+        }
         to_add = byte;
         number = number | (to_add << (8 * i));
     }
@@ -138,7 +144,9 @@ int read_lopsp(FILE* file, Lopsp* lopsp){
 
     init_lopsp(lopsp);
 
-    fread(&number_of_vertices_read, 2, 1,file);
+    if(fread(&number_of_vertices_read, 2, 1,file) != 1){
+        return 0;
+    }
 
     if(feof(file)){//there are no more lopsp-operations to be read
         return 0;
@@ -146,11 +154,26 @@ int read_lopsp(FILE* file, Lopsp* lopsp){
 
     set_vertexcount(lopsp->graph, number_of_vertices_read);
 
-    fread(&lopsp->v0, 2,1, file);
-    fread(&lopsp->v1, 2,1, file);
-    fread(&lopsp->v2, 2,1, file);
-    fread(&typev0, 2,1, file);
-    fread(&v1type1, 2,1, file);
+    if(fread(&lopsp->v0, 2,1, file) != 1){
+        fprintf(stderr, "A lopsp-operation could not be read. Are you sure all operations are encoded correctly?\n");
+        exit(1);
+    }
+    if(fread(&lopsp->v1, 2,1, file) != 1){
+        fprintf(stderr, "A lopsp-operation could not be read. Are you sure all operations are encoded correctly?\n");
+        exit(1);
+    }
+    if(fread(&lopsp->v2, 2,1, file) != 1){
+        fprintf(stderr, "A lopsp-operation could not be read. Are you sure all operations are encoded correctly?\n");
+        exit(1);
+    }
+    if(fread(&typev0, 2,1, file) != 1){
+        fprintf(stderr, "A lopsp-operation could not be read. Are you sure all operations are encoded correctly?\n");
+        exit(1);
+    }
+    if(fread(&v1type1, 2,1, file) != 1){
+        fprintf(stderr, "A lopsp-operation could not be read. Are you sure all operations are encoded correctly?\n");
+        exit(1);
+    }
 
     uint16_t curr_neighbour;
     Edge* new_edge;
@@ -165,8 +188,14 @@ int read_lopsp(FILE* file, Lopsp* lopsp){
     //read the encoded graph
     for (int i = 1; i <= lopsp->graph->vertexcount; i++)
     {
-        fread(&curr_neighbour, 2, 1, file);
-
+        if(fread(&curr_neighbour, 2,1, file) != 1){
+            fprintf(stderr, "A lopsp-operation could not be read. Are you sure all operations are encoded correctly?\n");
+            exit(1);
+        }
+        if(curr_neighbour == 0){
+            fprintf(stderr, "A vertex in the operation has no neighbours. This is not possible.\n");
+            exit(1);
+        }
         while (curr_neighbour !=0){
             new_edge = get_edge(i, lopsp->graph);
             new_edge->type = 1;
@@ -185,7 +214,10 @@ int read_lopsp(FILE* file, Lopsp* lopsp){
                 new_edge->inverse = NULL;
             }
             last_edge = new_edge;
-            fread(&curr_neighbour, 2, 1, file);
+            if(fread(&curr_neighbour, 2,1, file) != 1){
+                fprintf(stderr, "A lopsp-operation could not be read. Are you sure all operations are encoded correctly?\n");
+                exit(1);
+            }
         }
         lopsp->graph->edges[i]->prev = last_edge;
         last_edge->next = lopsp->graph->edges[i];
@@ -239,15 +271,24 @@ int read_lopsp(FILE* file, Lopsp* lopsp){
 enum code checkheader(FILE* file){
     enum code input_format;
     char buffer[10];
-    fgets(buffer, 3, file);
+    if(fgets(buffer, 3, file) == NULL){
+        fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
+        exit(1);
+    }
     if(strcmp(buffer, ">>")!=0){
         fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
         exit(1);
     }
-    fgets(buffer, 5, file);
+    if(fgets(buffer, 5, file) == NULL){
+        fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
+        exit(1);
+    }
 
     if(strcmp(buffer, "plan")==0){
-        fgets(buffer, 3, file);
+        if(fgets(buffer, 3, file) == NULL){
+            fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
+            exit(1);
+        }
         if(strcmp(buffer, "ar")!=0){
             fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
             exit(1);
@@ -260,13 +301,19 @@ enum code checkheader(FILE* file){
         exit(1);
     }
 
-    fgets(buffer, 6, file);
+    if(fgets(buffer, 6, file) == NULL){
+        fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
+        exit(1);
+    }
     if(strcmp(buffer, "_code")!=0){
         fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
         exit(1);
     }
 
-    fgets(buffer, 3, file);
+    if(fgets(buffer, 3, file) == NULL){
+        fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
+        exit(1);
+    }
     if(strcmp(buffer, "<<")!=0){
         if(buffer[0] != ' '){
             fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
@@ -278,7 +325,10 @@ enum code checkheader(FILE* file){
             fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
             exit(1);
         }
-        fgets(buffer, 4, file);
+        if(fgets(buffer, 4, file) == NULL){
+            fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
+            exit(1);
+        }
         if(strcmp(buffer, "e<<")!=0){
             fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
             exit(1);
@@ -289,7 +339,10 @@ enum code checkheader(FILE* file){
 
 void check_lopsp_header(FILE* file){
     char buffer[10];
-    fgets(buffer, 10, file);
+    if(fgets(buffer, 10, file) == NULL){
+        fprintf(stderr,"The encoding of the graphs should start with a header. It can be >>planar_code<<, >>planar_code le<<, >>planar_code be<< or >>edge_code<< \n");
+        exit(1);
+    }
     if(strcmp(buffer, ">>lopsp<<")!=0){
         fprintf(stderr,"The encoding of the operations should start with the header >>lopsp<< \n");
         exit(1);
@@ -356,12 +409,17 @@ int read_edgecode(FILE* file, Graph* graph){
     int curr_vertex; //the number of the current vertex
     unsigned long curr_edge; // the number of the current edge
 
-    fread(&read_byte, 1, 1,file);//read the number of vertices
+    if(fread(&read_byte, 1, 1,file) != 1) {//read the number of vertices
+        return 0;
+    }
     if (feof(file)){// we have reached the end of the file, there is no graph to be read
         return 0;
     }
     if(read_byte == 0){//maybe more than one byte per number
-        fread(&read_byte, 1, 1,file);//read the number of bytes per number and length of following number
+        if(fread(&read_byte, 1, 1,file) != 1) {//read the number of bytes per number and length of following number
+            fprintf(stderr,"The edgecode could not be read. Are you sure it is encoded correctly?\n");
+            exit(1);
+        }
         numbersize = read_byte & ((uint8_t)(~0) >> 4);
         totalsize = read_edge_number(file, read_byte >> 4);
     } else {// 1 byte per number
